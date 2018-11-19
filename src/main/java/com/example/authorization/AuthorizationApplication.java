@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
@@ -46,16 +49,27 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
+    http.csrf().disable();
     http.httpBasic();
 
     http
         .authorizeRequests()
         .mvcMatchers("/root").hasAnyAuthority("ROLE_ADMIN")
         .mvcMatchers(HttpMethod.GET, "/a").access("hasRole('ROLE_ADMIN')")
+        .mvcMatchers("/users/{name}").access("#name == principal?.username")
+        .mvcMatchers(HttpMethod.POST, "/b").access("@authz.check(request, principal)")
         .anyRequest().permitAll();
+  }
+}
 
-//    http
-//        .authorizeRequests().anyRequest().authenticated();
+@Service("authz")
+@Log4j2
+class AuthService {
+
+  public boolean check(HttpServletRequest request, CustomUser principal) {
+    log.info("checking incoming request:" + request.getRequestURI() + " for principal: " + principal
+        .getUsername());
+    return true;
   }
 }
 
@@ -76,7 +90,7 @@ class LetterRestController {
     return "a";
   }
 
-  @GetMapping("/b")
+  @PostMapping("/b")
   public String b() {
     return "b";
   }
