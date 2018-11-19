@@ -148,7 +148,7 @@ class CustomUser implements UserDetails {
 
   @Override
   public boolean isAccountNonExpired() {
-    return false;
+    return this.active;
   }
 
   @Override
