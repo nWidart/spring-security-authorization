@@ -10,9 +10,12 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,6 +43,25 @@ public class AuthorizationApplication {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return NoOpPasswordEncoder.getInstance();
+  }
+}
+
+@Order(1)
+@Configuration
+@EnableWebSecurity
+class ActuatorSecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+  @Override
+  protected void configure(HttpSecurity http) throws Exception {
+    //@formatter:off
+    http
+        .requestMatcher(EndpointRequest.toAnyEndpoint())
+        .authorizeRequests()
+          .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
+          .anyRequest().authenticated()
+        .and()
+        .httpBasic();
+    //@formatter:on
   }
 }
 
